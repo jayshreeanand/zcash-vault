@@ -4,6 +4,8 @@ import { WalletSelectorProvider } from "@near-wallet-selector/react-hook";
 import { SetupParams } from "@near-wallet-selector/react-hook/src/lib/WalletSelectorProvider";
 import { setupBitteWallet } from "@near-wallet-selector/bitte-wallet";
 import { setupMeteorWallet } from "@near-wallet-selector/meteor-wallet";
+import { setupMyNearWallet } from "@near-wallet-selector/my-near-wallet";
+import "@near-wallet-selector/modal-ui/styles.css";
 import Home from "./page";
 import { ThemeProvider } from "next-themes";
 import { Theme } from "@radix-ui/themes";
@@ -14,8 +16,10 @@ const walletSelectorConfig: SetupParams = {
   modules: [
     setupBitteWallet(),
     setupMeteorWallet(),
-    // doesn't work properly as it requires redirecting
-    // setupMyNearWallet(),
+    setupMyNearWallet({
+      walletUrl: "https://app.mynearwallet.com",
+      iconUrl: "/assets/my-near-wallet-icon.png",
+    }),
   ],
 };
 
