@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@defuse-protocol/defuse-sdk": "^1.0.0-beta.1",
     "@near-wallet-selector/bitte-wallet": "8.9.15",
     "@near-wallet-selector/core": "8.9.15",
     "@near-wallet-selector/meteor-wallet": "8.9.15",

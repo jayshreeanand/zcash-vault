@@ -22,7 +22,7 @@ const walletSelectorConfig: SetupParams = {
 export default function App() {
   return (
     <ThemeProvider attribute="class" forcedTheme="light">
-      <Theme accentColor="green" hasBackground={false} suppressHydrationWarning>
+      <Theme accentColor="green" hasBackground={false}>
         <WalletSelectorProvider config={walletSelectorConfig}>
           <Home />
         </WalletSelectorProvider>

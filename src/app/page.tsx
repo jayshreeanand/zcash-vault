@@ -1,9 +1,35 @@
 "use client";
 
+import {
+  ChainType,
+  DepositWidget,
+  SwapWidget,
+  WithdrawWidget,
+} from "@defuse-protocol/defuse-sdk";
+import { LIST_TOKENS } from "@/constants/tokens";
+import { useWalletSelector } from "@/contexts/WalletSelectorContext";
 import { Account } from "@/components/Account";
+import { useId, useState } from "react";
 import { ZECVault } from "@/components/ZECVault";
 
 export default function Home() {
+  const activeTabSelectId = useId();
+  const [chain] = useState<ChainType>(ChainType.Near);
+  const [activeTab, setActiveTab] = useState("swap");
+  const { selector, accountId } = useWalletSelector();
+
+  const signMessage = async (params: any) => {
+    const wallet = await selector?.wallet();
+    if (!wallet) throw new Error("No wallet connected");
+    return wallet.signMessage(params);
+  };
+
+  const signAndSendTransactions = async (params: any) => {
+    const wallet = await selector?.wallet();
+    if (!wallet) throw new Error("No wallet connected");
+    return wallet.signAndSendTransactions(params);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
       <div className="container mx-auto px-4 py-8">
@@ -16,6 +42,166 @@ export default function Home() {
         </header>
 
         <main className="space-y-8">
+          {/* Original Swap UI */}
+          <div className="bg-gray-800 rounded-lg p-6">
+            <div className="mb-6">
+              <span id={activeTabSelectId}>Active Tab</span>
+              <select
+                className="form-select ml-4 bg-gray-700 border-gray-600 text-white rounded"
+                id={activeTabSelectId}
+                value={activeTab}
+                onChange={(e) => setActiveTab(e.target.value)}
+              >
+                <option value={"deposit"}>Deposit</option>
+                <option value={"swap"}>Swap</option>
+                <option value={"withdraw"}>Withdraw</option>
+              </select>
+            </div>
+
+            {activeTab === "deposit" && (
+              <DepositWidget
+                tokenList={LIST_TOKENS}
+                chainType={chain}
+                userAddress={accountId || undefined}
+                sendTransactionEVM={async () => {
+                  throw new Error(`EVM transactions aren't supported`);
+                }}
+                sendTransactionSolana={async () => {
+                  throw new Error(`Solana transactions aren't supported`);
+                }}
+                sendTransactionNear={async (txs) => {
+                  const result = await signAndSendTransactions({
+                    transactions: txs.map(({ receiverId, actions }) => ({
+                      signerId: accountId!,
+                      receiverId,
+                      actions,
+                    })),
+                  });
+
+                  if (typeof result === "string") {
+                    return result;
+                  }
+
+                  const outcome = result![0];
+                  if (!outcome) {
+                    throw new Error("No outcome");
+                  }
+
+                  return outcome.transaction.hash;
+                }}
+              />
+            )}
+
+            {activeTab === "swap" && (
+              <SwapWidget
+                tokenList={LIST_TOKENS}
+                sendNearTransaction={async (tx) => {
+                  const result = await signAndSendTransactions({
+                    transactions: [
+                      {
+                        receiverId: tx.receiverId,
+                        actions: tx.actions,
+                        signerId: accountId!,
+                      },
+                    ],
+                  });
+
+                  if (typeof result === "string") {
+                    return { txHash: result };
+                  }
+
+                  const outcome = result![0];
+                  if (!outcome) {
+                    throw new Error("No outcome");
+                  }
+
+                  return { txHash: outcome.transaction.hash };
+                }}
+                userAddress={accountId || null}
+                userChainType={chain}
+                signMessage={async (params) => {
+                  switch (chain) {
+                    case ChainType.Near: {
+                      const signedData = {
+                        ...params.NEP413,
+                        nonce: Buffer.from(params.NEP413.nonce),
+                      };
+
+                      const signedMessage = await signMessage(signedData);
+
+                      if (!signedMessage) throw new Error("No signature");
+
+                      return {
+                        type: "NEP413",
+                        signatureData: signedMessage,
+                        signedData,
+                      };
+                    }
+
+                    default: {
+                      throw new Error(`Chain ${chain} isn't supported!`);
+                    }
+                  }
+                }}
+                onSuccessSwap={() => {}}
+              />
+            )}
+
+            {activeTab === "withdraw" && (
+              <WithdrawWidget
+                tokenList={LIST_TOKENS}
+                userAddress={accountId || undefined}
+                chainType={chain}
+                sendNearTransaction={async (tx) => {
+                  const result = await signAndSendTransactions({
+                    transactions: [
+                      {
+                        receiverId: tx.receiverId,
+                        actions: tx.actions,
+                        signerId: accountId!,
+                      },
+                    ],
+                  });
+
+                  if (typeof result === "string") {
+                    return { txHash: result };
+                  }
+
+                  const outcome = result![0];
+                  if (!outcome) {
+                    throw new Error("No outcome");
+                  }
+
+                  return { txHash: outcome.transaction.hash };
+                }}
+                signMessage={async (params) => {
+                  switch (chain) {
+                    case ChainType.Near: {
+                      const signedData = {
+                        ...params.NEP413,
+                        nonce: Buffer.from(params.NEP413.nonce),
+                      };
+
+                      const signedMessage = await signMessage(signedData);
+
+                      if (!signedMessage) throw new Error("No signature");
+
+                      return {
+                        type: "NEP413",
+                        signatureData: signedMessage,
+                        signedData,
+                      };
+                    }
+
+                    default: {
+                      throw new Error(`Chain ${chain} isn't supported!`);
+                    }
+                  }
+                }}
+              />
+            )}
+          </div>
+
           {/* ZEC Vault Features */}
           <div className="mt-12">
             <h2 className="text-2xl font-bold mb-6">Advanced Features</h2>
