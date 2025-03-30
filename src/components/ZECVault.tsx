@@ -1,6 +1,4 @@
-"use client";
-
-import { useWalletSelector } from "@/contexts/WalletSelectorContext";
+import { useWalletSelector } from "@near-wallet-selector/react-hook";
 import { useState } from "react";
 import { ChainType } from "@defuse-protocol/defuse-sdk";
 import { LIST_TOKENS } from "@/constants/tokens";
@@ -30,7 +28,7 @@ interface RebalanceAction {
 }
 
 export const ZECVault = () => {
-  const { selector, accountId } = useWalletSelector();
+  const { signedAccountId, signMessage, signAndSendTransactions } = useWalletSelector();
   const [selectedTab, setSelectedTab] = useState<"portfolio" | "intents" | "shielded">("portfolio");
   const [portfolioAllocation, setPortfolioAllocation] = useState<PortfolioAllocation[]>([
     { token: "ZEC", percentage: 50 },
@@ -41,13 +39,10 @@ export const ZECVault = () => {
 
   const handleShieldedSwap = async (fromToken: string, toToken: string, amount: string) => {
     try {
-      const wallet = await selector?.wallet();
-      if (!wallet) throw new Error("No wallet connected");
-
       // Create a shielded swap transaction using Defuse Protocol
-      const result = await wallet.signAndSendTransactions({
+      const result = await signAndSendTransactions({
         transactions: [{
-          signerId: accountId!,
+          signerId: signedAccountId!,
           receiverId: "defuse.near", // Replace with actual contract
           actions: [{
             type: "FunctionCall",
@@ -95,16 +90,13 @@ export const ZECVault = () => {
 
   const createTradingIntent = async (intent: TradingIntent) => {
     try {
-      const wallet = await selector?.wallet();
-      if (!wallet) throw new Error("No wallet connected");
-
       // Store the trading intent
       setTradingIntents([...tradingIntents, intent]);
 
       // Create an intent on the Defuse Protocol
-      const result = await wallet.signAndSendTransactions({
+      const result = await signAndSendTransactions({
         transactions: [{
-          signerId: accountId!,
+          signerId: signedAccountId!,
           receiverId: "defuse.near", // Replace with actual contract
           actions: [{
             type: "FunctionCall",

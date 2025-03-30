@@ -7,7 +7,7 @@ import {
   WithdrawWidget,
 } from "@defuse-protocol/defuse-sdk";
 import { LIST_TOKENS } from "@/constants/tokens";
-import { useWalletSelector } from "@/contexts/WalletSelectorContext";
+import { useWalletSelector } from "@near-wallet-selector/react-hook";
 import { Account } from "@/components/Account";
 import { useId, useState } from "react";
 import { ZECVault } from "@/components/ZECVault";
@@ -16,19 +16,8 @@ export default function Home() {
   const activeTabSelectId = useId();
   const [chain] = useState<ChainType>(ChainType.Near);
   const [activeTab, setActiveTab] = useState("swap");
-  const { selector, accountId } = useWalletSelector();
-
-  const signMessage = async (params: any) => {
-    const wallet = await selector?.wallet();
-    if (!wallet) throw new Error("No wallet connected");
-    return wallet.signMessage(params);
-  };
-
-  const signAndSendTransactions = async (params: any) => {
-    const wallet = await selector?.wallet();
-    if (!wallet) throw new Error("No wallet connected");
-    return wallet.signAndSendTransactions(params);
-  };
+  const { signedAccountId, signMessage, signAndSendTransactions } =
+    useWalletSelector();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
@@ -62,7 +51,7 @@ export default function Home() {
               <DepositWidget
                 tokenList={LIST_TOKENS}
                 chainType={chain}
-                userAddress={accountId || undefined}
+                userAddress={signedAccountId || undefined}
                 sendTransactionEVM={async () => {
                   throw new Error(`EVM transactions aren't supported`);
                 }}
@@ -72,7 +61,7 @@ export default function Home() {
                 sendTransactionNear={async (txs) => {
                   const result = await signAndSendTransactions({
                     transactions: txs.map(({ receiverId, actions }) => ({
-                      signerId: accountId!,
+                      signerId: signedAccountId!,
                       receiverId,
                       actions,
                     })),
@@ -101,7 +90,7 @@ export default function Home() {
                       {
                         receiverId: tx.receiverId,
                         actions: tx.actions,
-                        signerId: accountId!,
+                        signerId: signedAccountId!,
                       },
                     ],
                   });
@@ -117,7 +106,7 @@ export default function Home() {
 
                   return { txHash: outcome.transaction.hash };
                 }}
-                userAddress={accountId || null}
+                userAddress={signedAccountId || null}
                 userChainType={chain}
                 signMessage={async (params) => {
                   switch (chain) {
@@ -150,7 +139,7 @@ export default function Home() {
             {activeTab === "withdraw" && (
               <WithdrawWidget
                 tokenList={LIST_TOKENS}
-                userAddress={accountId || undefined}
+                userAddress={signedAccountId || undefined}
                 chainType={chain}
                 sendNearTransaction={async (tx) => {
                   const result = await signAndSendTransactions({
@@ -158,7 +147,7 @@ export default function Home() {
                       {
                         receiverId: tx.receiverId,
                         actions: tx.actions,
-                        signerId: accountId!,
+                        signerId: signedAccountId!,
                       },
                     ],
                   });
