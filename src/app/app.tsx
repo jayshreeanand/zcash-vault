@@ -18,7 +18,9 @@ const walletSelectorConfig: SetupParams = {
     setupMeteorWallet(),
     setupMyNearWallet({
       walletUrl: "https://app.mynearwallet.com",
-      iconUrl: "/assets/my-near-wallet-icon.png",
+      iconUrl: "/icons/network/near.svg",
+      successUrl: typeof window !== 'undefined' ? `${window.location.origin}` : undefined,
+      failureUrl: typeof window !== 'undefined' ? `${window.location.origin}` : undefined,
     }),
   ],
 };

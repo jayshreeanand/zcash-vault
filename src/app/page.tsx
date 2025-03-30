@@ -9,7 +9,7 @@ import {
 import { LIST_TOKENS } from "@/constants/tokens";
 import { useWalletSelector } from "@near-wallet-selector/react-hook";
 import { Account } from "@/components/Account";
-import { useId, useState } from "react";
+import { useId, useState, useEffect } from "react";
 import { Portfolio } from "@/components/Portfolio";
 import { IntentCreation } from "@/components/IntentCreation";
 import { PrivacyAnalytics } from "@/components/PrivacyAnalytics";
@@ -97,8 +97,44 @@ export default function Home() {
   const activeTabSelectId = useId();
   const [chain] = useState<ChainType>(ChainType.Near);
   const [activeTab, setActiveTab] = useState("portfolio");
-  const [showApp, setShowApp] = useState(false);
+  const [showApp, setShowApp] = useState(() => {
+    // Check if we're returning from wallet connection
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.has('account_id') || localStorage.getItem('showApp') === 'true';
+    }
+    return false;
+  });
   const { signedAccountId, signMessage, signAndSendTransactions } = useWalletSelector();
+
+  // Persist showApp state
+  useEffect(() => {
+    if (showApp) {
+      localStorage.setItem('showApp', 'true');
+    }
+  }, [showApp]);
+
+  // Handle wallet return
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('account_id')) {
+        setShowApp(true);
+        // Clean up URL
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
+  }, []);
+
+  // Add debugging for wallet connection state
+  useEffect(() => {
+    console.log('Wallet state changed:', {
+      signedAccountId,
+      showApp,
+      searchParams: typeof window !== 'undefined' ? window.location.search : '',
+      hasLocalStorage: typeof window !== 'undefined' ? !!localStorage.getItem('showApp') : false
+    });
+  }, [signedAccountId, showApp]);
 
   if (!showApp) {
     return (
