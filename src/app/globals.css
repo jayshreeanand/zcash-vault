@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* :root {
+  --background: #ffffff;
+  --foreground: #171717;
+} */
+
+:root {
+  --color: text-black;
+  --background: rgba(28, 32, 36, 1);
+}
+
+body {
+  color: var(--color);
+}
