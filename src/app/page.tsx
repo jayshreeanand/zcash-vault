@@ -11,6 +11,8 @@ import { useWalletSelector } from "@near-wallet-selector/react-hook";
 import { Account } from "@/components/Account";
 import { useId, useState } from "react";
 import { Portfolio } from "@/components/Portfolio";
+import { IntentCreation } from "@/components/IntentCreation";
+import { PrivacyAnalytics } from "@/components/PrivacyAnalytics";
 
 const LandingHero = () => (
   <div className="w-full bg-gradient-to-r from-gray-900 to-black text-white py-20 px-4">
@@ -123,6 +125,8 @@ export default function Home() {
             onChange={(e) => setActiveTab(e.target.value)}
           >
             <option value="portfolio">Portfolio</option>
+            <option value="create-intent">Create Intent</option>
+            <option value="privacy">Privacy Analytics</option>
             <option value="swap">Swap</option>
             <option value="deposit">Deposit</option>
             <option value="withdraw">Withdraw</option>
@@ -130,6 +134,8 @@ export default function Home() {
         </div>
 
         {activeTab === "portfolio" && <Portfolio />}
+        {activeTab === "create-intent" && <IntentCreation />}
+        {activeTab === "privacy" && <PrivacyAnalytics />}
 
         {activeTab === "deposit" && (
           <DepositWidget
