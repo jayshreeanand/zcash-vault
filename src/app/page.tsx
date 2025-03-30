@@ -13,8 +13,9 @@ import { useId, useState } from "react";
 import { Portfolio } from "@/components/Portfolio";
 import { IntentCreation } from "@/components/IntentCreation";
 import { PrivacyAnalytics } from "@/components/PrivacyAnalytics";
+import { LoginPrompt } from "@/components/LoginPrompt";
 
-const LandingHero = () => (
+const LandingHero = ({ onLaunch }: { onLaunch: () => void }) => (
   <div className="w-full bg-gradient-to-r from-gray-900 to-black text-white py-20 px-4">
     <div className="max-w-6xl mx-auto">
       <div className="flex flex-col items-center text-center mb-16">
@@ -25,7 +26,10 @@ const LandingHero = () => (
           Privacy-Preserving Portfolio Management & Cross-Chain Trading Platform
         </p>
         <div className="flex gap-4">
-          <button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-all">
+          <button 
+            onClick={onLaunch}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-all"
+          >
             Launch App
           </button>
           <button className="border border-blue-600 text-blue-400 hover:bg-blue-600/10 font-bold py-3 px-8 rounded-lg transition-all">
@@ -55,10 +59,10 @@ const LandingHero = () => (
       <div className="text-center">
         <h2 className="text-3xl font-bold mb-8">Supported Networks</h2>
         <div className="flex justify-center gap-8 flex-wrap">
-          <NetworkIcon name="ZCash" icon="/static/icons/network/zcash-icon-black.svg" />
-          <NetworkIcon name="NEAR" icon="/static/icons/network/near.svg" />
-          <NetworkIcon name="Ethereum" icon="/static/icons/network/ethereum.svg" />
-          <NetworkIcon name="Bitcoin" icon="/static/icons/network/bitcoin.svg" />
+          <NetworkIcon name="ZCash" icon="/icons/network/zcash.svg" />
+          <NetworkIcon name="NEAR" icon="/icons/network/near.svg" />
+          <NetworkIcon name="Ethereum" icon="/icons/network/ethereum.svg" />
+          <NetworkIcon name="Bitcoin" icon="/icons/network/bitcoin.svg" />
         </div>
       </div>
     </div>
@@ -75,7 +79,16 @@ const FeatureCard = ({ title, description, icon }: { title: string; description:
 
 const NetworkIcon = ({ name, icon }: { name: string; icon: string }) => (
   <div className="flex flex-col items-center gap-2">
-    <img src={icon} alt={name} className="w-12 h-12 invert" />
+    <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center p-2">
+      <img 
+        src={icon} 
+        alt={name} 
+        className="w-8 h-8"
+        onError={(e) => {
+          e.currentTarget.src = `/icons/network/fallback.svg`;
+        }}
+      />
+    </div>
     <span className="text-sm">{name}</span>
   </div>
 );
@@ -101,7 +114,7 @@ export default function Home() {
             </button>
           </div>
         </nav>
-        <LandingHero />
+        <LandingHero onLaunch={() => setShowApp(true)} />
       </div>
     );
   }
@@ -116,168 +129,174 @@ export default function Home() {
       </nav>
 
       <div className="flex flex-col gap-8 row-start-2 items-center sm:items-start mt-16">
-        <div className="my-8">
-          <span id={activeTabSelectId} className="sr-only">Active Tab</span>
-          <select
-            className="form-select bg-gray-800 text-white border-gray-700 rounded-lg px-4 py-2"
-            id={activeTabSelectId}
-            value={activeTab}
-            onChange={(e) => setActiveTab(e.target.value)}
-          >
-            <option value="portfolio">Portfolio</option>
-            <option value="create-intent">Create Intent</option>
-            <option value="privacy">Privacy Analytics</option>
-            <option value="swap">Swap</option>
-            <option value="deposit">Deposit</option>
-            <option value="withdraw">Withdraw</option>
-          </select>
-        </div>
+        {!signedAccountId ? (
+          <LoginPrompt />
+        ) : (
+          <>
+            <div className="my-8">
+              <span id={activeTabSelectId} className="sr-only">Active Tab</span>
+              <select
+                className="form-select bg-gray-800 text-white border-gray-700 rounded-lg px-4 py-2"
+                id={activeTabSelectId}
+                value={activeTab}
+                onChange={(e) => setActiveTab(e.target.value)}
+              >
+                <option value="portfolio">Portfolio</option>
+                <option value="create-intent">Create Intent</option>
+                <option value="privacy">Privacy Analytics</option>
+                <option value="swap">Swap</option>
+                <option value="deposit">Deposit</option>
+                <option value="withdraw">Withdraw</option>
+              </select>
+            </div>
 
-        {activeTab === "portfolio" && <Portfolio />}
-        {activeTab === "create-intent" && <IntentCreation />}
-        {activeTab === "privacy" && <PrivacyAnalytics />}
+            {activeTab === "portfolio" && <Portfolio />}
+            {activeTab === "create-intent" && <IntentCreation />}
+            {activeTab === "privacy" && <PrivacyAnalytics />}
 
-        {activeTab === "deposit" && (
-          <DepositWidget
-            tokenList={LIST_TOKENS}
-            chainType={chain}
-            userAddress={signedAccountId || undefined}
-            sendTransactionEVM={async () => {
-              throw new Error(`EVM transactions aren't supported`);
-            }}
-            sendTransactionSolana={async () => {
-              throw new Error(`Solana transactions aren't supported`);
-            }}
-            sendTransactionNear={async (txs) => {
-              const result = await signAndSendTransactions({
-                transactions: txs.map(({ receiverId, actions }) => ({
-                  signerId: signedAccountId!,
-                  receiverId,
-                  actions,
-                })),
-              });
+            {activeTab === "deposit" && (
+              <DepositWidget
+                tokenList={LIST_TOKENS}
+                chainType={chain}
+                userAddress={signedAccountId}
+                sendTransactionEVM={async () => {
+                  throw new Error(`EVM transactions aren't supported`);
+                }}
+                sendTransactionSolana={async () => {
+                  throw new Error(`Solana transactions aren't supported`);
+                }}
+                sendTransactionNear={async (txs) => {
+                  const result = await signAndSendTransactions({
+                    transactions: txs.map(({ receiverId, actions }) => ({
+                      signerId: signedAccountId,
+                      receiverId,
+                      actions,
+                    })),
+                  });
 
-              if (typeof result === "string") {
-                return result;
-              }
+                  if (typeof result === "string") {
+                    return result;
+                  }
 
-              const outcome = result![0];
-              if (!outcome) {
-                throw new Error("No outcome");
-              }
+                  const outcome = result![0];
+                  if (!outcome) {
+                    throw new Error("No outcome");
+                  }
 
-              return outcome.transaction.hash;
-            }}
-          />
-        )}
+                  return outcome.transaction.hash;
+                }}
+              />
+            )}
 
-        {activeTab === "swap" && (
-          <SwapWidget
-            tokenList={LIST_TOKENS}
-            sendNearTransaction={async (tx) => {
-              const result = await signAndSendTransactions({
-                transactions: [
-                  {
-                    receiverId: tx.receiverId,
-                    actions: tx.actions,
-                    signerId: signedAccountId!,
-                  },
-                ],
-              });
+            {activeTab === "swap" && (
+              <SwapWidget
+                tokenList={LIST_TOKENS}
+                sendNearTransaction={async (tx) => {
+                  const result = await signAndSendTransactions({
+                    transactions: [
+                      {
+                        receiverId: tx.receiverId,
+                        actions: tx.actions,
+                        signerId: signedAccountId,
+                      },
+                    ],
+                  });
 
-              if (typeof result === "string") {
-                return { txHash: result };
-              }
+                  if (typeof result === "string") {
+                    return { txHash: result };
+                  }
 
-              const outcome = result![0];
-              if (!outcome) {
-                throw new Error("No outcome");
-              }
+                  const outcome = result![0];
+                  if (!outcome) {
+                    throw new Error("No outcome");
+                  }
 
-              return { txHash: outcome.transaction.hash };
-            }}
-            userAddress={signedAccountId || null}
-            userChainType={chain}
-            signMessage={async (params) => {
-              switch (chain) {
-                case ChainType.Near: {
-                  const signedData = {
-                    ...params.NEP413,
-                    nonce: Buffer.from(params.NEP413.nonce),
-                  };
+                  return { txHash: outcome.transaction.hash };
+                }}
+                userAddress={signedAccountId}
+                userChainType={chain}
+                signMessage={async (params) => {
+                  switch (chain) {
+                    case ChainType.Near: {
+                      const signedData = {
+                        ...params.NEP413,
+                        nonce: Buffer.from(params.NEP413.nonce),
+                      };
 
-                  const signedMessage = await signMessage(signedData);
+                      const signedMessage = await signMessage(signedData);
 
-                  if (!signedMessage) throw new Error("No signature");
+                      if (!signedMessage) throw new Error("No signature");
 
-                  return {
-                    type: "NEP413",
-                    signatureData: signedMessage,
-                    signedData,
-                  };
-                }
+                      return {
+                        type: "NEP413",
+                        signatureData: signedMessage,
+                        signedData,
+                      };
+                    }
 
-                default: {
-                  throw new Error(`Chain ${chain} isn't supported!`);
-                }
-              }
-            }}
-            onSuccessSwap={() => {}}
-          />
-        )}
+                    default: {
+                      throw new Error(`Chain ${chain} isn't supported!`);
+                    }
+                  }
+                }}
+                onSuccessSwap={() => {}}
+              />
+            )}
 
-        {activeTab === "withdraw" && (
-          <WithdrawWidget
-            tokenList={LIST_TOKENS}
-            userAddress={signedAccountId || undefined}
-            chainType={chain}
-            sendNearTransaction={async (tx) => {
-              const result = await signAndSendTransactions({
-                transactions: [
-                  {
-                    receiverId: tx.receiverId,
-                    actions: tx.actions,
-                    signerId: signedAccountId!,
-                  },
-                ],
-              });
+            {activeTab === "withdraw" && (
+              <WithdrawWidget
+                tokenList={LIST_TOKENS}
+                userAddress={signedAccountId}
+                chainType={chain}
+                sendNearTransaction={async (tx) => {
+                  const result = await signAndSendTransactions({
+                    transactions: [
+                      {
+                        receiverId: tx.receiverId,
+                        actions: tx.actions,
+                        signerId: signedAccountId,
+                      },
+                    ],
+                  });
 
-              if (typeof result === "string") {
-                return { txHash: result };
-              }
+                  if (typeof result === "string") {
+                    return { txHash: result };
+                  }
 
-              const outcome = result![0];
-              if (!outcome) {
-                throw new Error("No outcome");
-              }
+                  const outcome = result![0];
+                  if (!outcome) {
+                    throw new Error("No outcome");
+                  }
 
-              return { txHash: outcome.transaction.hash };
-            }}
-            signMessage={async (params) => {
-              switch (chain) {
-                case ChainType.Near: {
-                  const signedData = {
-                    ...params.NEP413,
-                    nonce: Buffer.from(params.NEP413.nonce),
-                  };
+                  return { txHash: outcome.transaction.hash };
+                }}
+                signMessage={async (params) => {
+                  switch (chain) {
+                    case ChainType.Near: {
+                      const signedData = {
+                        ...params.NEP413,
+                        nonce: Buffer.from(params.NEP413.nonce),
+                      };
 
-                  const signedMessage = await signMessage(signedData);
+                      const signedMessage = await signMessage(signedData);
 
-                  if (!signedMessage) throw new Error("No signature");
+                      if (!signedMessage) throw new Error("No signature");
 
-                  return {
-                    type: "NEP413",
-                    signatureData: signedMessage,
-                    signedData,
-                  };
-                }
+                      return {
+                        type: "NEP413",
+                        signatureData: signedMessage,
+                        signedData,
+                      };
+                    }
 
-                default: {
-                  throw new Error(`Chain ${chain} isn't supported!`);
-                }
-              }
-            }}
-          />
+                    default: {
+                      throw new Error(`Chain ${chain} isn't supported!`);
+                    }
+                  }
+                }}
+              />
+            )}
+          </>
         )}
       </div>
     </div>
